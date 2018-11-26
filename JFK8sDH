@@ -1,0 +1,27 @@
+node{
+  def Namespace = "default"
+  def ImageName = "qassurancetechnology/nodejs-react-app"
+  def Creds = ""
+  try{
+  stage('Checkout'){
+      git 'https://github.com/QATInc/simple-node-js-react-npm-app.git'
+      sh "git rev-parse --short HEAD > .git/commit-id"
+      imageTag= readFile('.git/commit-id').trim()
+}
+stage('RUN Unit Tests'){
+      sh "npm install"
+      sh "npm test"
+  }
+  stage('Docker Build, Push'){
+    withDockerRegistry(url: 'https://hub.docker.com/r/qassurancetechnology/nodejs-react-app/') {
+      sh "docker build -t ${ImageName}:${imageTag} ."
+      sh "docker push ${ImageName}"
+        }
+}
+#    stage('Deploy on K8s'){
+#sh "ansible-playbook /var/lib/jenkins/ansible/sayarapp-deploy/deploy.yml  --user=jenkins --extra-vars ImageName=${ImageName} --extra-vars imageTag=${imageTag} --extra-vars Namespace=${Namespace}"
+#    }
+     } catch (err) {
+      currentBuild.result = 'FAILURE'
+    }
+}
